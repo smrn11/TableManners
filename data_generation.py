@@ -2,18 +2,10 @@ import random
 from faker import Faker
 from geopy.geocoders import Nominatim
 from datetime import datetime, timedelta
-import json
 from bson import ObjectId
 
 fake = Faker()
 geolocator = Nominatim(user_agent="iot_energy_addresses")
-
-class DateEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime.date):
-            return obj.isoformat()
-        return super().default(obj)
-
 
 # City data (pre-defined)
 cities = [
@@ -109,7 +101,7 @@ def generate_energy_usage_data(devices, start_date, end_date):
     while current_time <= end_date:
         for device in devices:
             is_weekend = current_time.weekday() >= 5  # 5 for Saturday, 6 for Sunday
-            peak = "true" if current_time.hour in peak_hours and not is_weekend else "false"
+            peak = True if current_time.hour in peak_hours and not is_weekend else False
             
             # Energy consumption logic
             energy_consumption = (
