@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 from typing import Dict, Literal
 
 # FastAPI app initialization
@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # MongoDB connection setup
-client = MongoClient("mongodb+srv://jjayabas:3pfZ6qeBJC5z0mSG@projectcluster.lpjnc.mongodb.net/")
+client = MongoClient("mongodb+srv://jjayabas:3pfZ6qeBJC5z0mSG@projectcluster.lpjnc.mongodb.net/?retryWrites=true&w=majority", readPreference="secondaryPreferred")
 db = client["iot_energy_usage"]
 energy_usage_collection = db["energy_usage"]
 
@@ -108,33 +108,49 @@ async def get_daily_average_energy_by_city(city_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@app.get("/api/cluster-status")
-async def get_cluster_status():
+def format_uptime(seconds):
     """
-    Endpoint to get the active nodes in the MongoDB cluster, their status,
-    and whether they are primary or secondary.
+    Format uptime in D days HH:MM:SS format.
+    """
+    days = seconds // 86400
+    hours = (seconds % 86400) // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    return f"{days} days {hours:02}:{minutes:02}:{seconds:02}"
+
+@app.get("/api/cluster-health")
+async def get_cluster_health():
+    """
+    Check the health of the MongoDB cluster.
     """
     try:
-        # Execute the 'replSetGetStatus' command
         repl_status = client.admin.command("replSetGetStatus")
-
-        # Extract node information
         nodes = []
         for member in repl_status.get("members", []):
-            nodes.append({
-                "name": member["name"],  # Node's hostname and port
-                "state": member["stateStr"],  # Node's state (e.g., PRIMARY, SECONDARY, etc.)
-                "health": "healthy" if member["health"] == 1 else "unhealthy",  # Node's health
-                "uptime": member.get("uptime", 0),  # Uptime in seconds
-                "last_heartbeat": member.get("lastHeartbeatRecv", "N/A"),  # Last heartbeat timestamp
-                "ping": member.get("pingMs", "N/A")  # Ping time in milliseconds
-            })
+            # Format uptime
+            uptime_seconds = member.get("uptime", 0)
+            formatted_uptime = format_uptime(uptime_seconds)
 
-        # Return the nodes as a JSON response
+            # Get last heartbeat and ping information
+            last_heartbeat = member.get("lastHeartbeatRecv")
+            last_heartbeat = last_heartbeat.isoformat() if last_heartbeat else "Unknown"
+
+            ping_ms = member.get("pingMs", "Unknown")
+
+            nodes.append({
+                "name": member["name"],
+                "state": member["stateStr"],  # PRIMARY, SECONDARY, ARBITER, etc.
+                "health": "healthy" if member["health"] == 1 else "unhealthy",
+                "uptime": formatted_uptime,
+                "last_heartbeat": last_heartbeat,
+                "ping_ms": ping_ms
+            })
         return {"nodes": nodes}
 
+    except errors.ServerSelectionTimeoutError as e:
+        raise HTTPException(status_code=503, detail="Unable to connect to MongoDB. Ensure a quorum is maintained.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching cluster status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
     
 @app.get("/api/average-energy-zip/{city_name}/{time_period}")
 async def get_average_energy_by_zip(
