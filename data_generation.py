@@ -1,23 +1,29 @@
 import random
 from faker import Faker
 from geopy.geocoders import Nominatim
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 import json
+from bson import ObjectId
 
 fake = Faker()
 geolocator = Nominatim(user_agent="iot_energy_addresses")
 
+class DateEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.date):
+            return obj.isoformat()
+        return super().default(obj)
+
+
 # City data (pre-defined)
 cities = [
-    {"city_name": "New York City", "state": "NY", "country": "USA", "population": 8000000},
-    {"city_name": "Lincoln", "state": "NE", "country": "USA", "population": 280000},
-    {"city_name": "San Diego", "state": "CA", "country": "USA", "population": 1400000}
+    {"_id": ObjectId(), "city_name": "New York City", "state": "NY", "country": "USA", "population": 8000000},
+    {"_id": ObjectId(), "city_name": "Lincoln", "state": "NE", "country": "USA", "population": 280000},
+    {"_id": ObjectId(), "city_name": "San Diego", "state": "CA", "country": "USA", "population": 1400000}
 ]
 
-# Define peak hours (e.g., 5 PM to 8 PM)
-peak_hours = range(17, 20)
+# Define peak hours (5 PM to 9 PM)
+peak_hours = range(17, 21)
 
 # Helper function to generate a random address based on latitude and longitude
 def get_address_and_postal_code(lat, lon):
@@ -56,7 +62,7 @@ def generate_unit_data(city_info, units_per_city=100):
         }
 
         unit = {
-            "ID": fake.uuid4(),
+            "_id": ObjectId(),
             "unit_id": fake.uuid4(),
             "city_id": city_info["city_name"],
             "location": location,  # GeoJSON field
@@ -83,7 +89,7 @@ def generate_device_data(units):
             status = "active" if random.random() < 0.95 else "inactive"
 
             device = {
-                "ID": fake.uuid4(),
+                "_id": ObjectId(),
                 "device_id": fake.uuid4(),
                 "unit_id": unit["unit_id"],
                 "type": device_type,
@@ -96,37 +102,33 @@ def generate_device_data(units):
 
 
 # Generate Energy Usage Collection Data
-def generate_energy_usage_data(devices, start_date, end_date, readings_per_device=24):
+def generate_energy_usage_data(devices, start_date, end_date):
     usage_data = []
-    time_delta = (end_date - start_date).days * 24  # hourly data
+    current_time = start_date
 
-    for device in devices:
-        device_usage = []
-        for _ in range(readings_per_device):
-            timestamp = start_date + timedelta(hours=random.randint(0, time_delta))
-            peak = "yes" if timestamp.hour in peak_hours else "no"
+    while current_time <= end_date:
+        for device in devices:
+            is_weekend = current_time.weekday() >= 5  # 5 for Saturday, 6 for Sunday
+            peak = "true" if current_time.hour in peak_hours and not is_weekend else "false"
             
-            # Generate energy consumption with smart meter > sum of others
-            energy_consumption = random.uniform(0, 5) if device["Type"] != "Smart Meter" else \
-                                 random.uniform(5, 15)
+            # Energy consumption logic
+            energy_consumption = (
+                random.uniform(5, 15) if device["type"] == "smart_meter"
+                else random.uniform(0, 5)
+            )
             
             usage = {
-                "ID": fake.uuid4(),
-                "Device_ID": device["Device_ID"],
-                "Timestamp": timestamp,
-                "Energy_Consumption_kwh": energy_consumption if energy_consumption > 0 else 0,
-                "Peak_Hours": peak
+                "_id": ObjectId(),
+                "device_id": device["device_id"],
+                "timestamp": current_time,
+                "energy_consumption_kwh": round(energy_consumption, 2),
+                "peak_hours": peak
             }
-            device_usage.append(usage)
+            usage_data.append(usage)
+        
+        # Move to the next hour
+        current_time += timedelta(hours=1)
 
-        # Ensure smart meter total > sum of other devices in the same unit
-        if device["Type"] == "Smart Meter":
-            total_other_devices = sum(d["Energy_Consumption_kwh"] for d in device_usage if d["Peak_Hours"] == "no")
-            for usage in device_usage:
-                if usage["Peak_Hours"] == "no":
-                    usage["Energy_Consumption_kwh"] = max(total_other_devices + random.uniform(1, 3), usage["Energy_Consumption_kwh"])
-
-        usage_data.extend(device_usage)
     return usage_data
 
 # Generate all data collections
@@ -148,8 +150,8 @@ def generate_all_data():
         devices_data.extend(devices)
 
         # Generate energy usage for each device
-        start_date, end_date = datetime(2024, 10, 1), datetime(2024, 10, 31)
-        usage = generate_energy_usage_data(devices, start_date, end_date, readings_per_device=24)
+        start_date, end_date = datetime(2024, 10, 1), datetime(2024, 11, 1)
+        usage = generate_energy_usage_data(devices, start_date, end_date)
         usage_data.extend(usage)
 
     return {
@@ -162,24 +164,11 @@ def generate_all_data():
 # Generate data
 data = generate_all_data()
 
-# data.write_csv("data.csv")
-
-# write data to a json file
-# with open("data_cities.json", "w") as f:
-#     json.dump(data["cities"], f, indent=4)
-
-# with open("data_units.json", "w") as f:
-#     json.dump(data["units"], f, indent=4)
-
-# with open("data_devices.json", "w") as f:
-#     json.dump(data["devices"][:100], f, indent=4)
-
-# with open("data_energy_usage.json", "w") as f:
-#     json.dump(data["energy_usage"][:100], f, indent=4)
-
-# Example output
+# print output
 print("City Data:", data["cities"])
 print("Unit Data:")
-print(json.dumps(data["units"][:10], indent=4))
-# print("Device Data:", data["devices"])
-# print("Energy Usage Data:", data["energy_usage"])
+print(data["units"][:5])
+print("Device Data:")
+print(data["devices"][:5])
+print("Device Data:")
+print(data["energy_usage"][:15])
