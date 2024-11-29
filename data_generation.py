@@ -57,12 +57,12 @@ def generate_unit_data(city_info, units_per_city=100):
 
         unit = {
             "ID": fake.uuid4(),
-            "Unit_id": fake.uuid4(),
-            "City_ID": city_info["city_name"],
-            "Location": location,  # GeoJSON field
-            "Address": address,
-            "Postal_Code": postal_code,  # Extracted from the address
-            "Unit_Type": random.choice(["residential", "industrial", "commercial"])
+            "unit_id": fake.uuid4(),
+            "city_id": city_info["city_name"],
+            "location": location,  # GeoJSON field
+            "address": address,
+            "postal_code": postal_code,  # Extracted from the address
+            "unit_type": random.choice(["residential", "industrial", "commercial"])
         }
         units.append(unit)
     return units
@@ -70,32 +70,30 @@ def generate_unit_data(city_info, units_per_city=100):
 # Generate Device Collection Data
 def generate_device_data(units):
     devices = []
-    for unit in units:
-        # Smart Meter (primary device for each unit)
-        smart_meter = {
-            "ID": fake.uuid4(),
-            "Device_ID": fake.uuid4(),
-            "Unit_ID": unit["Unit_id"],
-            "Type": "Smart Meter",
-            "Install_Date": fake.date_between(start_date="-5y", end_date="today"),
-            "Service_Date": None,
-            "Status": "active"
-        }
-        devices.append(smart_meter)
+    possible_device_types = ["smart_meter", "thermostat", "hvac"]
+    possible_statuses = ["active", "inactive"]
 
-        # Additional devices for the unit (e.g., thermostat, HVAC)
-        for device_type in ["thermostat", "HVAC"]:
+    
+    for unit in units:
+        # Randomly decide how many devices to generate for this unit (1 to 3)
+        num_devices = random.randint(1, 3)
+        selected_device_types = random.sample(possible_device_types, num_devices)
+
+        for device_type in selected_device_types:
+            status = "active" if random.random() < 0.95 else "inactive"
+
             device = {
                 "ID": fake.uuid4(),
-                "Device_ID": fake.uuid4(),
-                "Unit_ID": unit["Unit_id"],
-                "Type": device_type,
-                "Install_Date": fake.date_between(start_date="-5y", end_date="today"),
-                "Service_Date": None,
-                "Status": "active"
+                "device_id": fake.uuid4(),
+                "unit_id": unit["unit_id"],
+                "type": device_type,
+                "install_date": fake.date_between(start_date="-5y", end_date="today"),
+                "service_date": None if random.random() > 0.2 else fake.date_between(start_date="-1y", end_date="today"),
+                "status": status
             }
             devices.append(device)
     return devices
+
 
 # Generate Energy Usage Collection Data
 def generate_energy_usage_data(devices, start_date, end_date, readings_per_device=24):
@@ -150,7 +148,7 @@ def generate_all_data():
         devices_data.extend(devices)
 
         # Generate energy usage for each device
-        start_date, end_date = datetime(2023, 1, 1), datetime(2023, 12, 31)
+        start_date, end_date = datetime(2024, 10, 1), datetime(2024, 10, 31)
         usage = generate_energy_usage_data(devices, start_date, end_date, readings_per_device=24)
         usage_data.extend(usage)
 
