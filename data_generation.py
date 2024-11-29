@@ -5,9 +5,6 @@ from geopy.geocoders import Nominatim
 from datetime import datetime, timedelta, date
 from bson import ObjectId
 
-fake = Faker()
-geolocator = Nominatim(user_agent="iot_energy_addresses")
-
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, ObjectId):
@@ -15,6 +12,9 @@ class CustomJSONEncoder(json.JSONEncoder):
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()
         return super().default(obj)
+    
+fake = Faker()
+geolocator = Nominatim(user_agent="iot_energy_addresses")
 
 # City data (pre-defined)
 cities = [
@@ -46,7 +46,7 @@ def generate_city_data():
 # Generate Unit Collection Data
 def generate_unit_data(city_info, units_per_city=100):
     units = []
-    for _ in range(10):
+    for _ in range(units_per_city):
         lat = random.uniform(40.4774, 40.9176) if city_info["city_name"] == "New York City" else \
               random.uniform(37.6391, 37.9298) if city_info["city_name"] == "San Diego" else \
               random.uniform(40.8000, 40.9000)  # Example for Lincoln bounding box
@@ -94,8 +94,8 @@ def generate_device_data(units):
                 "device_id": fake.uuid4(),
                 "unit_id": unit["unit_id"],
                 "type": device_type,
-                "install_date": fake.date_between(start_date="-5y", end_date="today"),
-                "service_date": None if random.random() > 0.2 else fake.date_between(start_date="-1y", end_date="today"),
+                "install_date": fake.date_time_between(start_date="-5y", end_date=datetime(2024, 10, 31)),
+                "service_date": None if random.random() > 0.2 else fake.date_time_between(start_date="-1y", end_date=datetime(2024, 10, 31)),
                 "status": status
             }
             devices.append(device)
@@ -162,15 +162,16 @@ def generate_all_data():
         "energy_usage": usage_data
 }
 
-# Generate data
-data = generate_all_data()
+if __name__ == "__main__":
+    # Generate data
+    data = generate_all_data()
 
-# print output
-print("City Data:")
-print(json.dumps(data["cities"], indent=4, cls=CustomJSONEncoder))
-print("Unit Data:")
-print(json.dumps(data["units"][:5], indent=4, cls=CustomJSONEncoder))
-print("Device Data:")
-print(json.dumps(data["devices"][:5], indent=4, cls=CustomJSONEncoder))
-print("Device Data:")
-print(json.dumps(data["energy_usage"][:5], indent=4, cls=CustomJSONEncoder))
+    # print output
+    print("City Data:")
+    print(json.dumps(data["cities"], indent=4, cls=CustomJSONEncoder))
+    print("Unit Data:")
+    print(json.dumps(data["units"][:5], indent=4, cls=CustomJSONEncoder))
+    print("Device Data:")
+    print(json.dumps(data["devices"][:5], indent=4, cls=CustomJSONEncoder))
+    print("Device Data:")
+    print(json.dumps(data["energy_usage"][:5], indent=4, cls=CustomJSONEncoder))
