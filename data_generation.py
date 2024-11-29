@@ -1,11 +1,20 @@
+import json
 import random
 from faker import Faker
 from geopy.geocoders import Nominatim
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from bson import ObjectId
 
 fake = Faker()
 geolocator = Nominatim(user_agent="iot_energy_addresses")
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
 
 # City data (pre-defined)
 cities = [
@@ -157,10 +166,11 @@ def generate_all_data():
 data = generate_all_data()
 
 # print output
-print("City Data:", data["cities"])
+print("City Data:")
+print(json.dumps(data["cities"], indent=4, cls=CustomJSONEncoder))
 print("Unit Data:")
-print(data["units"][:5])
+print(json.dumps(data["units"][:5], indent=4, cls=CustomJSONEncoder))
 print("Device Data:")
-print(data["devices"][:5])
+print(json.dumps(data["devices"][:5], indent=4, cls=CustomJSONEncoder))
 print("Device Data:")
-print(data["energy_usage"][:15])
+print(json.dumps(data["energy_usage"][:5], indent=4, cls=CustomJSONEncoder))
