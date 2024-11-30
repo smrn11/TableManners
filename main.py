@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pymongo import MongoClient, errors
 from typing import Dict, Literal
+from pydantic import BaseModel
+from datetime import datetime
+from pymongo import MongoClient, errors
 
 # FastAPI app initialization
 app = FastAPI()
@@ -9,7 +11,8 @@ app = FastAPI()
 # Add CORS middleware to allow cross-origin requests from your frontend (localhost:3000)
 origins = [
     "http://localhost:3000",
-    "http://localhost:7000"  # Allow requests from your frontend
+    "http://localhost:7000",
+    "http://localhost:9000" # Allow requests from your frontend
 ]
 
 app.add_middleware(
@@ -24,6 +27,12 @@ app.add_middleware(
 client = MongoClient("mongodb+srv://jjayabas:3pfZ6qeBJC5z0mSG@projectcluster.lpjnc.mongodb.net/?retryWrites=true&w=majority", readPreference="secondaryPreferred")
 db = client["iot_energy_usage"]
 energy_usage_collection = db["energy_usage"]
+
+# Request model
+class EnergyUsageRequest(BaseModel):
+    city_name: str
+    start_date: str  # Format: "YYYY-MM-DD"
+    end_date: str = None 
 
 @app.get("/api/daily-average-energy/{city_name}", response_model=Dict[str, Dict[str, float]])
 async def get_daily_average_energy_by_city(city_name: str):
@@ -320,3 +329,108 @@ async def get_average_energy_by_zip(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calculating average energy: {str(e)}")
+    
+@app.post("/api/average-daily-usage-by-unit-type")
+async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
+# Parse start_date and end_date
+    try:
+        start_date = datetime.strptime(request.start_date, "%Y-%m-%d")
+        end_date = (
+            datetime.strptime(request.end_date, "%Y-%m-%d")
+            if request.end_date
+            else start_date
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use 'YYYY-MM-DD'.")
+
+    if end_date < start_date:
+        raise HTTPException(status_code=400, detail="End date cannot be earlier than start date.")
+
+    # MongoDB aggregation pipeline
+    pipeline = [
+        # Step 1: Filter units by city_id
+        {
+            "$match": {
+                "city_id": request.city_name
+            }
+        },
+        # Step 2: Lookup devices associated with these units
+        {
+            "$lookup": {
+                "from": "devices",
+                "localField": "unit_id",
+                "foreignField": "unit_id",
+                "as": "devices"
+            }
+        },
+        {"$unwind": "$devices"},
+        # Step 3: Lookup energy usage readings for the filtered devices
+        {
+            "$lookup": {
+                "from": "energy_usage",
+                "localField": "devices.device_id",
+                "foreignField": "device_id",
+                "as": "energy_data"
+            }
+        },
+        {"$unwind": "$energy_data"},
+        # Step 4: Filter energy usage by the specified date range
+        {
+            "$match": {
+                "energy_data.timestamp": {
+                    "$gte": start_date,
+                    "$lte": end_date
+                }
+            }
+        },
+        # Step 5: Group by date and unit type, calculate daily averages
+        {
+            "$group": {
+                "_id": {
+                    "date": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$energy_data.timestamp"
+                        }
+                    },
+                    "unit_type": "$unit_type"
+                },
+                "average_daily_usage": {"$avg": "$energy_data.energy_consumption_kwh"}
+            }
+        },
+        # Step 6: Group results by date for easier consumption
+        {
+            "$group": {
+                "_id": "$_id.date",
+                "unit_type_averages": {
+                    "$push": {
+                        "unit_type": "$_id.unit_type",
+                        "average_usage": "$average_daily_usage"
+                    }
+                }
+            }
+        },
+        # Step 7: Project the final output
+        {
+            "$project": {
+                "_id": 0,
+                "date": "$_id",
+                "unit_type_averages": 1
+            }
+        },
+        # Step 8: Sort by date
+        {
+            "$sort": {"date": 1}
+        }
+    ]
+
+    # Execute the pipeline
+    try:
+        results = list(db["units"].aggregate(pipeline))
+        if not results:
+            raise HTTPException(status_code=404, detail="No data found for the provided inputs.")
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+    
+
