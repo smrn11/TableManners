@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Energy Usage Dashboard</title>
+  <!-- Include D3.js Library -->
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <!-- Include CSS Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Energy Usage Dashboard</h1>
+  
+  <!-- Navigation Tabs -->
+  <div class="tabs">
+    <button class="tablink" onclick="openTab(event, 'Tab1')">Daily Average Energy Usage</button>
+    <button class="tablink" onclick="openTab(event, 'Tab2')">Cluster Health</button>
+    <button class="tablink" onclick="openTab(event, 'Tab3')">Average Energy by Zip Code</button>
+    <button class="tablink" onclick="openTab(event, 'Tab4')">Average Daily Usage by Unit Type</button>
+    <button class="tablink" onclick="openTab(event, 'Tab5')">Top Units</button>
+    <button class="tablink" onclick="openTab(event, 'Tab6')">Average Energy by Device Type</button>
+  </div>
+  
+  <!-- Tab Contents -->
+  <!-- Tab1 Content -->
+    <div id="Tab1" class="tabcontent">
+        <h2>Daily Average Energy Usage</h2>
+        <label for="city-select-1">Select City:</label>
+        <select id="city-select-1">
+        <option value="New York City">New York City</option>
+        <option value="San Diego">San Diego</option>
+        <option value="Lincoln">Lincoln</option>
+        </select>
+        <button id="fetch-data-1">Fetch Data</button>
+        
+        <!-- Chart Container -->
+        <div id="loader-1" class="loader hidden"></div>
+        <div id="chart-container-1"></div>
+    </div>
+  
+  <!-- Tab2 Content -->
+    <div id="Tab2" class="tabcontent">
+        <h2>Cluster Health</h2>
+        <button id="fetch-cluster-health">Fetch Cluster Health</button>
+        <div id="loader-1" class="loader hidden"></div>
+        <table id="cluster-health-table" class="hidden">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>State</th>
+                    <th>Health</th>
+                    <th>Uptime</th>
+                    <th>Last Heartbeat</th>
+                    <th>Ping (ms)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+
+  
+  <!-- Tab3 Content -->
+    <div id="Tab3" class="tabcontent">
+        <h2>Average Energy by Zip Code</h2>
+        <label for="city-select-3">Select City:</label>
+        <select id="city-select-3">
+        <option value="New York City">New York City</option>
+        <option value="San Diego">San Diego</option>
+        <option value="Lincoln">Lincoln</option>
+        </select>
+        
+        <label for="time-period-select">Select Time Period:</label>
+        <select id="time-period-select">
+        <option value="day">Day</option>
+        <option value="week">Week</option>
+        <option value="month">Month</option>
+        </select>
+        
+        <button id="fetch-data-3">Fetch Data</button>
+        
+        <!-- Chart Container -->
+        <div id="loader-3" class="loader hidden"></div>
+        <div id="chart-container-3"></div>
+    </div>
+    
+  <!-- Tab4 Content -->
+    <div id="Tab4" class="tabcontent">
+        <h2>Average Daily Usage by Unit Type</h2>
+        <label for="city-select-4">Select City:</label>
+        <select id="city-select-4">
+        <option value="New York City">New York City</option>
+        <option value="San Diego">San Diego</option>
+        <option value="Lincoln">Lincoln</option>
+        </select>
+        
+        <label for="start-date-4">Start Date:</label>
+        <input type="date" id="start-date-4" min="2024-10-01" max="2024-11-01">
+
+        <label for="end-date-4">End Date:</label>
+        <input type="date" id="end-date-4" min="2024-10-01" max="2024-11-01">
+
+        
+        <button id="fetch-data-4">Fetch Data</button>
+        
+        <!-- Chart Container -->
+        <div id="loader-4" class="loader hidden"></div>
+        <div id="chart-container-4"></div>
+    </div>
+  
+  <!-- Tab5 Content -->
+    <div id="Tab5" class="tabcontent">
+        <h2>Units Ranked by Energy Consumption</h2>
+        <label for="city-select-5">Select City:</label>
+        <select id="city-select-5">
+            <option value="New York City">New York City</option>
+            <option value="San Diego">San Diego</option>
+            <option value="Lincoln">Lincoln</option>
+        </select>
+        <button id="fetch-data-5">Fetch Data</button>
+        
+        <!-- Table Container -->
+        <div id="loader-1" class="loader hidden"></div>
+        <table id="top-units-table" border="1" class="hidden">
+            <thead>
+                <tr>
+                    <th>Unit ID</th>
+                    <th>Address</th>
+                    <th>Total Energy Usage (kWh)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+  
+    <!-- Tab6 Content -->
+    <div id="Tab6" class="tabcontent">
+        <h2>Average Energy Usage by Device Type</h2>
+        <label for="city-select-6">Select City:</label>
+        <select id="city-select-6">
+        <option value="New York City">New York City</option>
+        <option value="San Diego">San Diego</option>
+        <option value="Lincoln">Lincoln</option>
+        </select>
+        <button id="fetch-data-6">Fetch Data</button>
+        
+        <!-- Chart Container -->
+        <div id="loader-6" class="loader hidden"></div>
+        <div id="chart-container-6"></div>
+    </div>
+  
+  
+  <!-- Include JavaScript File -->
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+/* General Layout */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+}
+
+h1 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: #4CAF50; /* Green accent color */
+}
+
+/* Tabs Navigation Bar */
+.tabs {
+    overflow: hidden;
+    background-color: #333; /* Darker background for better readability */
+    margin-bottom: 20px;
+    text-align: center; /* Center alignment for all tabs */
+    border-radius: 5px;
+}
+
+.tablink {
+    background-color: #333;
+    color: white;
+    display: inline-block;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 20px;
+    transition: background-color 0.3s;
+    font-size: 16px;
+}
+
+.tablink:hover {
+    background-color: #575757;
+    color: white;
+}
+
+.active {
+    background-color: #4CAF50 !important; /* Highlight active tab */
+}
+
+/* Tab Content */
+.tabcontent {
+    text-align: center; /* Center-align all content */
+    padding: 20px;
+    display: none; /* Hidden by default */
+}
+
+/* Buttons */
+button {
+    display: inline-block;
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    margin: 15px 0; /* Add spacing around buttons */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+/* Chart Containers */
+#chart-container-1,
+#chart-container-3,
+#chart-container-4,
+#chart-container-6 {
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 90%;
+    max-width: 1000px;
+}
+
+/* Tables */
+#cluster-health-table,
+#top-units-table {
+    border-collapse: collapse;
+    width: 80%;
+    margin: 20px auto;
+    font-size: 14px;
+}
+
+#cluster-health-table th,
+#top-units-table th {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+    text-align: left;
+}
+
+#cluster-health-table td,
+#top-units-table td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+#cluster-health-table tr:hover,
+#top-units-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Hidden Elements */
+.hidden {
+    display: none;
+}
+
+/* Loader Styling */
+.loader {
+    border: 6px solid #f3f3f3; /* Light grey */
+    border-top: 6px solid #4CAF50; /* Green */
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+    display: block;
+}
+
+/* Animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Hidden Class */
+.hidden {
+    display: none;
+}
