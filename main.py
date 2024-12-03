@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 # MongoDB connection setup
-client = MongoClient("mongodb+srv://jjayabas:3pfZ6qeBJC5z0mSG@projectcluster.lpjnc.mongodb.net/?retryWrites=true&w=majority", readPreference="secondaryPreferred")
+client = MongoClient("mongodb+srv://jjayabas:**********@projectcluster.lpjnc.mongodb.net/?retryWrites=true&w=majority", readPreference="secondaryPreferred")
 db = client["iot_energy_usage"]
 units_collection = db["units"]
 devices_collection = db["devices"]
@@ -41,15 +41,12 @@ async def get_daily_average_energy_by_city(city_name: str):
     for a specific city.
     """
     try:
-        # Aggregation pipeline (optimized with top-down filtering)
         pipeline = [
-            # Step 1: Filter units by city at the top
             {
                 "$match": {
                     "city_id": city_name
                 }
             },
-            # Step 2: Lookup devices for these units
             {
                 "$lookup": {
                     "from": "devices",
@@ -59,7 +56,6 @@ async def get_daily_average_energy_by_city(city_name: str):
                 }
             },
             { "$unwind": "$devices" },
-            # Step 3: Lookup energy usage for these devices
             {
                 "$lookup": {
                     "from": "energy_usage",
@@ -69,7 +65,6 @@ async def get_daily_average_energy_by_city(city_name: str):
                 }
             },
             { "$unwind": "$energy_data" },
-            # Step 4: Extract relevant fields and transform
             {
                 "$project": {
                     "city": "$city_id",
@@ -80,7 +75,6 @@ async def get_daily_average_energy_by_city(city_name: str):
                     "peak_hours": "$energy_data.peak_hours"
                 }
             },
-            # Step 5: Group by city, date, and peak/off-peak status
             {
                 "$group": {
                     "_id": { "city": "$city", "date": "$date", "peak_hours": "$peak_hours" },
@@ -88,7 +82,6 @@ async def get_daily_average_energy_by_city(city_name: str):
                     "count": { "$sum": 1 }
                 }
             },
-            # Step 6: Calculate average energy consumption
             {
                 "$project": {
                     "date": "$_id.date",
@@ -97,17 +90,14 @@ async def get_daily_average_energy_by_city(city_name: str):
                     "average_energy_consumption": { "$divide": ["$total_energy_consumption", "$count"] }
                 }
             },
-            # Step 7: Sort by date and peak hours
             { "$sort": { "date": 1, "peak_hours": -1 } }
         ]
         
-        # Run the aggregation pipeline
         result = list(units_collection.aggregate(pipeline))
         
         if not result:
             raise HTTPException(status_code=404, detail="City not found or no data available")
         
-        # Prepare the response dictionary to hold averages for on-peak and off-peak
         response = {}
 
         for item in result:
@@ -145,11 +135,9 @@ async def get_cluster_health():
         repl_status = client.admin.command("replSetGetStatus")
         nodes = []
         for member in repl_status.get("members", []):
-            # Format uptime
             uptime_seconds = member.get("uptime", 0)
             formatted_uptime = format_uptime(uptime_seconds)
 
-            # Get last heartbeat and ping information
             last_heartbeat = member.get("lastHeartbeatRecv")
             last_heartbeat = last_heartbeat.isoformat() if last_heartbeat else "Unknown"
 
@@ -157,7 +145,7 @@ async def get_cluster_health():
 
             nodes.append({
                 "name": member["name"],
-                "state": member["stateStr"],  # PRIMARY, SECONDARY, ARBITER, etc.
+                "state": member["stateStr"], 
                 "health": "healthy" if member["health"] == 1 else "unhealthy",
                 "uptime": formatted_uptime,
                 "last_heartbeat": last_heartbeat,
@@ -182,15 +170,12 @@ async def get_average_energy_by_zip(
     are sorted in chronological order.
     """
     try:
-        # Base pipeline: Start from city level
         pipeline = [
-            # Match units by city
             {
                 "$match": {
-                    "city_id": city_name  # Top-down filtering by city_id
+                    "city_id": city_name  
                 }
             },
-            # Lookup devices for units in the matched city
             {
                 "$lookup": {
                     "from": "devices",
@@ -200,7 +185,6 @@ async def get_average_energy_by_zip(
                 }
             },
             { "$unwind": "$devices" },
-            # Lookup energy usage for devices
             {
                 "$lookup": {
                     "from": "energy_usage",
@@ -210,7 +194,6 @@ async def get_average_energy_by_zip(
                 }
             },
             { "$unwind": "$energy_data" },
-            # Add relevant fields for grouping
             {
                 "$addFields": {
                     "postal_code": "$postal_code",
@@ -218,7 +201,6 @@ async def get_average_energy_by_zip(
                     "energy_consumption_kwh": "$energy_data.energy_consumption_kwh"
                 }
             },
-            # Exclude invalid postal codes or timestamps
             {
                 "$match": {
                     "postal_code": { "$exists": True, "$ne": None },
@@ -227,7 +209,6 @@ async def get_average_energy_by_zip(
             }
         ]
 
-        # Add time-period specific grouping and projection
         if time_period == "day":
             pipeline += [
                 {
@@ -308,7 +289,6 @@ async def get_average_energy_by_zip(
                 }
             ]
 
-        # Add final grouping and sorting
         pipeline += [
             {
                 "$group": {
@@ -317,11 +297,9 @@ async def get_average_energy_by_zip(
                     "total_average_energy": { "$avg": "$average_energy" }
                 }
             },
-            # Sort ZIP codes by total average energy usage in descending order
             {
                 "$sort": { "total_average_energy": -1 }
             },
-            # Ensure dates within each ZIP code are in chronological order
             {
                 "$project": {
                     "_id": 0,
@@ -338,13 +316,11 @@ async def get_average_energy_by_zip(
             }
         ]
 
-        # Run the aggregation pipeline
         result = list(db["units"].aggregate(pipeline))
         
         if not result:
             raise HTTPException(status_code=404, detail="No data found for the specified city or time period.")
 
-        # Format the response
         response = {}
         for entry in result:
             zip_code = entry["zip_code"]
@@ -360,7 +336,6 @@ async def get_average_energy_by_zip(
     
 @app.post("/api/average-daily-usage-by-unit-type")
 async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
-# Parse start_date and end_date
     try:
         start_date = datetime.strptime(request.start_date, "%Y-%m-%d")
         end_date = (
@@ -374,15 +349,12 @@ async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
     if end_date < start_date:
         raise HTTPException(status_code=400, detail="End date cannot be earlier than start date.")
 
-    # MongoDB aggregation pipeline
     pipeline = [
-        # Step 1: Filter units by city_id
         {
             "$match": {
                 "city_id": request.city_name
             }
         },
-        # Step 2: Lookup devices associated with these units
         {
             "$lookup": {
                 "from": "devices",
@@ -392,7 +364,6 @@ async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
             }
         },
         {"$unwind": "$devices"},
-        # Step 3: Lookup energy usage readings for the filtered devices
         {
             "$lookup": {
                 "from": "energy_usage",
@@ -402,7 +373,6 @@ async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
             }
         },
         {"$unwind": "$energy_data"},
-        # Step 4: Filter energy usage by the specified date range
         {
             "$match": {
                 "energy_data.timestamp": {
@@ -411,7 +381,6 @@ async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
                 }
             }
         },
-        # Step 5: Group by date and unit type, calculate daily averages
         {
             "$group": {
                 "_id": {
@@ -426,7 +395,6 @@ async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
                 "average_daily_usage": {"$avg": "$energy_data.energy_consumption_kwh"}
             }
         },
-        # Step 6: Group results by date for easier consumption
         {
             "$group": {
                 "_id": "$_id.date",
@@ -438,7 +406,6 @@ async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
                 }
             }
         },
-        # Step 7: Project the final output
         {
             "$project": {
                 "_id": 0,
@@ -446,13 +413,11 @@ async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
                 "unit_type_averages": 1
             }
         },
-        # Step 8: Sort by date
         {
             "$sort": {"date": 1}
         }
     ]
 
-    # Execute the pipeline
     try:
         results = list(db["units"].aggregate(pipeline))
         if not results:
@@ -463,13 +428,10 @@ async def average_daily_usage_by_unit_type(request: EnergyUsageRequest):
 
 @app.get("/top-units/{city_name}")
 async def get_top_units(city_name: str):
-    # MongoDB aggregation pipeline
     pipeline = [
-        # Match units for the given city
         {
             "$match": { "city_id": city_name }
         },
-        # Lookup devices for the matched units
         {
             "$lookup": {
                 "from": "devices",
@@ -479,7 +441,6 @@ async def get_top_units(city_name: str):
             }
         },
         { "$unwind": "$devices" },
-        # Lookup energy usage for the matched devices
         {
             "$lookup": {
                 "from": "energy_usage",
@@ -489,19 +450,15 @@ async def get_top_units(city_name: str):
             }
         },
         { "$unwind": "$energy_data" },
-        # Group by unit_id and calculate total energy usage
         {
             "$group": {
                 "_id": "$unit_id",
                 "total_energy_usage": { "$sum": "$energy_data.energy_consumption_kwh" },
-                "address": { "$first": "$address" }  # Include the unit address
+                "address": { "$first": "$address" }  
             }
         },
-        # Sort by total energy usage in descending order
         { "$sort": { "total_energy_usage": -1 } },
-        # Limit to the top 5 units
         { "$limit": 5 },
-        # Project the results into a clean format
         {
             "$project": {
                 "_id": 0,
@@ -513,7 +470,6 @@ async def get_top_units(city_name: str):
     ]
 
     try:
-        # Execute the pipeline
         results = list(db["units"].aggregate(pipeline))
 
         if not results:
@@ -525,9 +481,7 @@ async def get_top_units(city_name: str):
 
 @app.get("/average-energy-by-device-type/{city_name}")
 async def get_average_energy_by_device_type(city_name: str):
-    # MongoDB aggregation pipeline
     pipeline = [
-        # Lookup units to get the city mapping
         {
             "$lookup": {
                 "from": "units",
@@ -537,11 +491,9 @@ async def get_average_energy_by_device_type(city_name: str):
             }
         },
         { "$unwind": "$unit_info" },
-        # Match the city_name
         {
             "$match": { "unit_info.city_id": city_name }
         },
-        # Lookup energy usage for devices in this city
         {
             "$lookup": {
                 "from": "energy_usage",
@@ -551,14 +503,12 @@ async def get_average_energy_by_device_type(city_name: str):
             }
         },
         { "$unwind": "$energy_data" },
-        # Group by device type and calculate average energy usage
         {
             "$group": {
-                "_id": "$type",  # Group by device type
+                "_id": "$type", 
                 "average_energy_usage": { "$avg": "$energy_data.energy_consumption_kwh" }
             }
         },
-        # Project the result in a clean format
         {
             "$project": {
                 "_id": 0,
@@ -569,7 +519,6 @@ async def get_average_energy_by_device_type(city_name: str):
     ]
 
     try:
-        # Execute the pipeline
         results = list(db["devices"].aggregate(pipeline))
 
         if not results:

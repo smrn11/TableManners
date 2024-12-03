@@ -15,9 +15,9 @@
   <div class="tabs">
     <button class="tablink" onclick="openTab(event, 'Tab1')">Daily Average Energy Usage</button>
     <button class="tablink" onclick="openTab(event, 'Tab2')">Cluster Health</button>
-    <button class="tablink" onclick="openTab(event, 'Tab3')">Average Energy by Zip Code</button>
+    <button class="tablink" onclick="openTab(event, 'Tab3')">Average Energy Usage by Zip Code</button>
     <button class="tablink" onclick="openTab(event, 'Tab4')">Average Daily Usage by Unit Type</button>
-    <button class="tablink" onclick="openTab(event, 'Tab5')">Top Units</button>
+    <button class="tablink" onclick="openTab(event, 'Tab5')">Highest Energy Consumers</button>
     <button class="tablink" onclick="openTab(event, 'Tab6')">Average Energy by Device Type</button>
   </div>
   
@@ -64,7 +64,7 @@
   
   <!-- Tab3 Content -->
     <div id="Tab3" class="tabcontent">
-        <h2>Average Energy by Zip Code</h2>
+        <h2>Average Energy Usage by Zip Code</h2>
         <label for="city-select-3">Select City:</label>
         <select id="city-select-3">
         <option value="New York City">New York City</option>
@@ -112,7 +112,7 @@
   
   <!-- Tab5 Content -->
     <div id="Tab5" class="tabcontent">
-        <h2>Units Ranked by Energy Consumption</h2>
+        <h2>Top 5 Units Ranked by Energy Consumption</h2>
         <label for="city-select-5">Select City:</label>
         <select id="city-select-5">
             <option value="New York City">New York City</option>
