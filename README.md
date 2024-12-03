@@ -1,4 +1,12 @@
-# CSE 512 Group Project by Table Manners
+# Geo-Distributed Database for analyzing energy usage in smart cities
+## A project by group Table Manners for CSE-512
+
+As part of our project for the course CSE-512: Distributed Database Systems, we have built this application that allows user (potentially consumers and energy providers) to analyse energy consumption data originating from IOT devices in smart cities that are rapidly expanding in this day and age. To demonstrate the usefulness of this application in a real-world scenario, we have:
+- Created scripts that create synthetic data that is very realistic and logically accurate (to mimic real world closeness).
+- Set up 3 nodes in our MongoDB cluster (one in `us-east-1`, one in `us-east-2` and one in `us-west-1`) to harness the advantages of a distributed system like performance and fault tolerance.
+- Created a front end that visualizes query results in graphs and charts to make the data analysis more easier and insightful.
+
+To try our project, follow the steps below:
 
 ## Setting up the project
 
@@ -19,7 +27,7 @@
 
 Pre-requisites: We will need the libraries `pymongo`, `Faker`, `bson` and `geopy` libraries for this part. So install them using the command: `pip install pymongo faker bson geopy`.
 
-- Once these libraries have been installed, you can run the `data_generation.py` file using the command: `python data_generation.py` and upon succesfull execution of this file, you have to run the `data_insertion.py` similarly using the command `python data_insertion.py`.
+- Once these libraries have been installed, you can run the `data_insertion.py` similarly using the command `python data_insertion.py`, as this file will call the `data_generation.py` file during it's execution.
 - If both of these python files have executed without any issues, then the database `iot_energy_usage` in your cluster will have the synthetic data that was just generated.
 
 ## Running the back-end 
