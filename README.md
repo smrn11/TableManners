@@ -3,7 +3,7 @@
 
 As part of our project for the course CSE-512: Distributed Database Systems, we have built this application that allows user (potentially consumers and energy providers) to analyse energy consumption data originating from IOT devices in smart cities that are rapidly expanding in this day and age. To demonstrate the usefulness of this application in a real-world scenario, we have:
 - Created scripts that create synthetic data that is very realistic and logically accurate (to mimic real world closeness).
-- Set up 3 nodes in our MongoDB cluster (one in `us-east-1`, one in `us-east-2` and one in `us-west-1`) to harness the advantages of a distributed system like performance and fault tolerance.
+- Set up 3 nodes in our MongoDB cluster (one in `us-east-1`, one in `us-west-1` and one in `us-west-2`) to harness the advantages of a distributed system like performance and fault tolerance.
 - Created a front end that visualizes query results in graphs and charts to make the data analysis more easier and insightful.
 
 To try our project, follow the steps below:
